@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "smart-traffic"
+version = "0.1.0"
+description = ""
+authors = ["Igal Kolihman <igal.kolihman@gmail.com>"]
+readme = "README.md"
+packages = [{include = "smart_traffic"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+scapy = "^2.4.5"
+loguru = "^0.6.0"
+pymongo = "^4.3.2"
+
+
+[tool.poetry.group.dev.dependencies]
+ipdb = "^0.13.9"
+black = "^22.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
