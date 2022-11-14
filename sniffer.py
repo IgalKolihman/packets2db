@@ -1,3 +1,54 @@
+"""Packet sniffing module which stores the packets inside a database.
+
+In order to work, this module uses a `.ini` configuration file.
+The configuration file contains the settings needed for the sniffer to work.
+
+Configuration:
+    There are 2 main titles for the sniffer:
+        - [DATABASE]
+        - [SNIFFER]
+
+    The DATABASE stores the settings needed to connect to the working database. The SNIFFER stores
+    the settings needed for the sniffer to work.
+
+    SNIFFER:
+        interface:      On which interface to sniff
+        logging:        Level of logging (options: v, vv, vvv)
+        only_layers:    Save only the layers that are mentiond here.
+        exclude_layers: Dont store the layers mentions here
+
+    DATABASE (type: mongo):
+        type:   set to "mongo".
+        url:    URL to connect to the database.
+
+Configuration Examples:
+    1. Connect to a mongodb database, sniff on the 'localhost' interface with minimal logging and
+        store only the IP layer of each packet.
+    > [DATABASE]
+    >     type = mongodb
+    >     url = mongodb://admin:admin@localhost
+    >
+    > [SNIFFER]
+    >     interface = lo
+    >     logging = v
+    >     only_layers =
+    >         IP
+
+
+    2. Connect to a mongodb database, sniff on the 'localhost' interface with minimal logging and
+        don't store the RAW, IP and ICMP layers in each packet.
+    > [DATABASE]
+    >     type = mongodb
+    >     url = mongodb://admin:admin@localhost
+    >
+    > [SNIFFER]
+    >     interface = eth1
+    >     logging = vv
+    >     exclude_layers =
+    >         RAW
+    >         IP
+    >         ICMP
+"""
 import configparser
 from typing import Dict, Union
 from collections import ChainMap
@@ -5,14 +56,10 @@ from configparser import SectionProxy
 
 import loguru
 from scapy.all import sniff
-from pymongo import MongoClient
 
 from databases import IDatabase, init_db
 
 logger = loguru.logger
-
-client = MongoClient("mongodb://admin:admin@localhost")
-traffic_db = client["traffic"]["Legion"]
 
 
 class Sniffer:
