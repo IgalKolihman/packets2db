@@ -11,8 +11,8 @@ from databases import IDatabase, init_db
 
 logger = loguru.logger
 
-client = MongoClient("mongodb://admin:admin@localhost")
-traffic_db = client["traffic"]["Legion"]
+# client = MongoClient("mongodb://admin:admin@localhost")
+# traffic_db = client["traffic"]["Legion"]
 
 
 class Sniffer:
@@ -101,7 +101,7 @@ class Sniffer:
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
-    config.read("conf.ini")
+    config.read(".packets2db.ini")
     db_config, sniff_config = config["DATABASE"], config["SNIFFER"]
 
     db = init_db(config=db_config, interface=sniff_config["interface"])

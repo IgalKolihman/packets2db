@@ -12,6 +12,8 @@ scapy = "^2.4.5"
 loguru = "^0.6.0"
 pymongo = "^4.3.2"
 
+[tool.poetry.group.dev]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 ipdb = "^0.13.9"
