@@ -1,16 +1,20 @@
 [tool.poetry]
-name = "smart-traffic"
+name = "packets2db"
 version = "0.1.0"
 description = ""
 authors = ["Igal Kolihman <igal.kolihman@gmail.com>"]
 readme = "README.md"
-packages = [{include = "smart_traffic"}]
+packages = [
+    { include = "packets2db/" },
+    { include = "scripts/" },
+]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.6"
 scapy = "^2.4.5"
 loguru = "^0.6.0"
 pymongo = "^4.3.2"
+docopt = "^0.6.2"
 
 [tool.poetry.group.dev]
 optional = true
@@ -22,3 +26,6 @@ black = "^22.10.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+packets2db = 'scripts.cli:main'

@@ -18,13 +18,13 @@ class IDatabase:
 class MongoDB(IDatabase):
     TYPE = "mongodb"
 
-    def __init__(self, url: str, db: str, interface: str, collection: str = None):
+    def __init__(self, url: str, interface: str, collection: str = None):
         if collection is None:
-            collection = f"{platform.node()}.{interface}"
+            collection = f"{interface}"
 
         client = MongoClient(url)
         self.interface = interface
-        self.collection = client[db][collection]
+        self.collection = client[platform.node()][collection]
 
     def upload_document(self, document: dict):
         self.collection.insert_one(document)
@@ -37,7 +37,6 @@ def init_db(config: SectionProxy, interface: str) -> IDatabase:
     if config["type"] == MongoDB.TYPE:
         return MongoDB(
             url=config["url"],
-            db=config["db"],
             interface=interface,
             collection=config.get("collection", None),
         )
