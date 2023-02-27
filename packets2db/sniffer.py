@@ -1,18 +1,15 @@
-import configparser
+import traceback
 from typing import Dict, Union
 from collections import ChainMap
 from configparser import SectionProxy
 
 import loguru
 from scapy.all import sniff
-from pymongo import MongoClient
+from bson import InvalidDocument
 
-from databases import IDatabase, init_db
+from packets2db.databases import IDatabase
 
 logger = loguru.logger
-
-# client = MongoClient("mongodb://admin:admin@localhost")
-# traffic_db = client["traffic"]["Legion"]
 
 
 class Sniffer:
@@ -42,10 +39,14 @@ class Sniffer:
         sniff(prn=lambda pkt: self._handle_packet(pkt), iface=self.interface)
 
     def _handle_packet(self, packet):
-        parsed_packet = self._parse_packet(packet)
-        self._log_packet(packet, parsed_packet)
+        try:
+            parsed_packet = self._parse_packet(packet)
+            self._log_packet(packet, parsed_packet)
+            self.db.upload_document(parsed_packet)
 
-        self.db.upload_document(parsed_packet)
+        except InvalidDocument:
+            logger.error(f"Couldn't encode packet")
+            self._log_error(packet)
 
     def _log_packet(self, packet, parsed_packet):
         if self.verbosity_level is None:
@@ -59,6 +60,23 @@ class Sniffer:
 
         elif self.verbosity_level == "vvv":
             packet.show()
+
+    def _log_error(self, packet):
+        if self.verbosity_level is None:
+            return
+
+        elif self.verbosity_level == "v":
+            logger.error(f"Couldn't encode packet {packet.summary()}")
+
+        elif self.verbosity_level == "vv":
+            logger.error(f"Couldn't encode packet:")
+            packet.show()
+            traceback.print_exc()
+
+        elif self.verbosity_level == "vvv":
+            logger.error(f"Couldn't encode packet:")
+            packet.show()
+            traceback.print_stack()
 
     def _parse_packet(self, packet) -> Dict:
         """
@@ -97,13 +115,3 @@ class Sniffer:
             layer[field.name] = value
 
         return {obj.name: layer}
-
-
-if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config.read(".packets2db.ini")
-    db_config, sniff_config = config["DATABASE"], config["SNIFFER"]
-
-    db = init_db(config=db_config, interface=sniff_config["interface"])
-    sniffer = Sniffer(db, sniff_config)
-    sniffer.sniff()
