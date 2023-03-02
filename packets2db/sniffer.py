@@ -1,25 +1,25 @@
+"""Packet sniffer"""
 import traceback
-from typing import Dict, Union
-from collections import ChainMap
 from configparser import SectionProxy
 
 import loguru
 from scapy.all import sniff
+from scapy.packet import Packet
 from bson import InvalidDocument
 
-from packets2db.databases import IDatabase
+from packets2db.packet_storage import IStorage
 
 logger = loguru.logger
 
 
 class Sniffer:
-    NATIVE_VALUES = (int, float, str, bytes, bool, list, tuple, set, dict, type(None))
-
-    def __init__(self, database: IDatabase, conf: SectionProxy):
+    def __init__(self, database: IStorage, conf: SectionProxy):
         self.db = database
         self.config = conf
         self.interface = self.config["interface"]
         self.verbosity_level = self.config.get("logging", None)
+
+        self.packet_counter = 0
 
         excluded_fields = self.config.get("exclude_layers", None)
         only_fields = self.config.get("only_layers", None)
@@ -35,30 +35,30 @@ class Sniffer:
 
     def sniff(self):
         logger.info(f"Beginning sniff for interface {self.interface}")
-        logger.info(f"Packets are sent to a '{self.db.TYPE}' database")
+        logger.info(f"Packets are stored in '{self.db.TYPE}'")
         sniff(prn=lambda pkt: self._handle_packet(pkt), iface=self.interface)
 
-    def _handle_packet(self, packet):
+    def _handle_packet(self, packet: Packet):
         try:
-            parsed_packet = self._parse_packet(packet)
-            self._log_packet(packet, parsed_packet)
-            self.db.upload_document(parsed_packet)
+            self._log_packet(packet)
+            self.db.store(packet)
 
         except InvalidDocument:
             logger.error(f"Couldn't encode packet")
             self._log_error(packet)
 
-    def _log_packet(self, packet, parsed_packet):
+    def _log_packet(self, packet):
+        self.packet_counter += 1
         if self.verbosity_level is None:
+            print(f"{self.packet_counter} Packets were captured.", end='\r')
             return
 
         elif self.verbosity_level == "v":
             logger.debug(packet.summary())
 
-        elif self.verbosity_level == "vv":
-            logger.debug(parsed_packet)
-
-        elif self.verbosity_level == "vvv":
+        elif self.verbosity_level in ["vv", "vvv"]:
+            self.packet_counter += 1
+            logger.debug(f"Packet number {self.packet_counter}")
             packet.show()
 
     def _log_error(self, packet):
@@ -66,52 +66,14 @@ class Sniffer:
             return
 
         elif self.verbosity_level == "v":
-            logger.error(f"Couldn't encode packet {packet.summary()}")
+            logger.error(f"Couldn't store or encode packet {packet.summary()}")
 
         elif self.verbosity_level == "vv":
-            logger.error(f"Couldn't encode packet:")
+            logger.error(f"Couldn't store or encode packet:")
             packet.show()
             traceback.print_exc()
 
         elif self.verbosity_level == "vvv":
-            logger.error(f"Couldn't encode packet:")
+            logger.error(f"Couldn't store or encode packet:")
             packet.show()
             traceback.print_stack()
-
-    def _parse_packet(self, packet) -> Dict:
-        """
-        Turn every layer to dict, store in ChainMap type.
-        """
-        d = list()
-
-        for i in range(len(packet.layers())):
-            layer = packet.getlayer(i)
-
-            if layer.name in self.excluded_fields:
-                continue
-
-            if not self.only_fields:
-                d.append(self._parse_layer(layer))
-
-            elif layer.name in self.only_fields:
-                d.append(self._parse_layer(layer))
-
-        return dict(ChainMap(*d))
-
-    def _parse_layer(self, obj) -> Union[Dict, None]:
-        layer = {}
-
-        if not getattr(obj, "fields_desc", None):
-            return
-
-        for field in obj.fields_desc:
-            value = getattr(obj, field.name)
-            if value is None:
-                value = None
-
-            if not isinstance(value, self.NATIVE_VALUES):
-                value = self._parse_layer(value)
-
-            layer[field.name] = value
-
-        return {obj.name: layer}
