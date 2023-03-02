@@ -14,7 +14,7 @@ from os.path import exists
 from docopt import docopt
 
 from packets2db.sniffer import Sniffer
-from packets2db.databases import init_db
+from packets2db.packet_storage import init_storage
 
 DEFAULT_CONFIG_PATH = ".packets2db.ini"
 
@@ -33,7 +33,7 @@ def main():
     config.read(config_path)
     db_config, sniff_config = config["DATABASE"], config["SNIFFER"]
 
-    db = init_db(config=db_config, interface=sniff_config["interface"])
+    db = init_storage(config=db_config, interface=sniff_config["interface"])
     sniffer = Sniffer(db, sniff_config)
     sniffer.sniff()
 
