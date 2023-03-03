@@ -31,7 +31,7 @@ def main():
 
     config = configparser.ConfigParser()
     config.read(config_path)
-    db_config, sniff_config = config["DATABASE"], config["SNIFFER"]
+    db_config, sniff_config = config["STORAGE"], config["SNIFFER"]
 
     db = init_storage(config=db_config, interface=sniff_config["interface"])
     sniffer = Sniffer(db, sniff_config)

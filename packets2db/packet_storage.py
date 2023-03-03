@@ -29,6 +29,7 @@ class IStorage:
         pass
 
     def store(self, packet: Packet, **kwargs):
+        """Stores the packet in the chosen storage."""
         pass
 
 
@@ -72,6 +73,17 @@ class MongoDB(IStorage):
         return dict(ChainMap(*d))
 
     def _parse_layer(self, obj) -> Union[Dict, None]:
+        """Helper method used by the serialize method to parse a layer of the packet.
+
+        Takes one argument obj, which is the layer to be parsed. The method returns a
+        dictionary representation of the layer.
+
+        Args:
+            obj (Union[Dict, None]): Tha layer to parse.
+
+        Returns:
+            dict. Dictionary representation of the layer.
+        """
         layer = {}
 
         if not getattr(obj, "fields_desc", None):
@@ -90,20 +102,39 @@ class MongoDB(IStorage):
         return {obj.name: layer}
 
     def store(self, packet: Packet, filters: Tuple[list] = None):
+        """Stores the packet in the MongoDB collection specified in the constructor.
+
+        Args:
+            packet (Packet): Packet to store in the db.
+            filters (Tuple[list]):  [ [excluded_fields ... ], [only_fields ...]]
+        """
         self.collection.insert_one(self.serialize(packet, filters))
 
 
 class Pcap(IStorage):
+    """Used for storing packets in a Pcap file. """
     TYPE = "pcap"
 
     def __init__(self, path: str):
         self.pkt_dump = PcapWriter(path, append=True, sync=True)
 
     def store(self, packet: Packet, **kwargs):
+        """Writes the packet to the Pcap file.
+
+        Args:
+            packet (Packet): The packet to store.
+            **kwargs:
+        """
         self.pkt_dump.write(packet)
 
 
 def init_storage(config: SectionProxy, interface: str) -> IStorage:
+    """Initialize the appropriate storage class based on the configuration parameters.
+
+    Args:
+        config (SectionProxy): Contains the configuration parameters
+        interface (str): Name of the interface from which the packets are being captured
+    """
     if config["type"] == MongoDB.TYPE:
         return MongoDB(
             url=config["url"],

@@ -13,6 +13,7 @@ logger = loguru.logger
 
 
 class Sniffer:
+    """Handles the packet sniffing process."""
     def __init__(self, database: IStorage, conf: SectionProxy):
         self.db = database
         self.config = conf
@@ -34,11 +35,17 @@ class Sniffer:
         self.only_fields = only_fields if only_fields else []
 
     def sniff(self):
+        """Starts the packet sniffing process."""
         logger.info(f"Beginning sniff for interface {self.interface}")
         logger.info(f"Packets are stored in '{self.db.TYPE}'")
         sniff(prn=lambda pkt: self._handle_packet(pkt), iface=self.interface)
 
     def _handle_packet(self, packet: Packet):
+        """Handles each packet that is captured by the sniffer.
+
+        Args:
+            packet (Packet): Captured packet by scapy's `sniff`
+        """
         try:
             self._log_packet(packet)
             self.db.store(packet)
@@ -48,6 +55,7 @@ class Sniffer:
             self._log_error(packet)
 
     def _log_packet(self, packet):
+        """Logs the packet information"""
         self.packet_counter += 1
         if self.verbosity_level is None:
             print(f"{self.packet_counter} Packets were captured.", end='\r')
@@ -62,6 +70,7 @@ class Sniffer:
             packet.show()
 
     def _log_error(self, packet):
+        """Logs the error messages if the packet is invalid."""
         if self.verbosity_level is None:
             return
 
