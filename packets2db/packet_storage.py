@@ -112,7 +112,8 @@ class MongoDB(IStorage):
 
 
 class Pcap(IStorage):
-    """Used for storing packets in a Pcap file. """
+    """Used for storing packets in a Pcap file."""
+
     TYPE = "pcap"
 
     def __init__(self, path: str):

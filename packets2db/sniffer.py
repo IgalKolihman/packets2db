@@ -14,6 +14,7 @@ logger = loguru.logger
 
 class Sniffer:
     """Handles the packet sniffing process."""
+
     def __init__(self, database: IStorage, conf: SectionProxy):
         self.db = database
         self.config = conf
@@ -58,7 +59,7 @@ class Sniffer:
         """Logs the packet information"""
         self.packet_counter += 1
         if self.verbosity_level is None:
-            print(f"{self.packet_counter} Packets were captured.", end='\r')
+            print(f"{self.packet_counter} Packets were captured.", end="\r")
             return
 
         elif self.verbosity_level == "v":
